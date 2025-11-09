@@ -228,11 +228,32 @@ class PrayerController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void completePrayer(PrayerType type) {
+    final state = _timers[type]!;
+
+    if (state.isCompleted) {
+      return;
+    }
+
+    final secondsWorked = state.accruedSeconds;
+    state.cancelTicker();
+    state.isRunning = false;
+    state.isPaused = false;
+    state.isCompleted = true;
+    state.remaining = Duration.zero;
+    state.accruedSeconds = 0;
+
+    _recordSession(type, secondsWorked, completed: true);
+    notifyListeners();
+  }
+
   void resetCompletion(PrayerType type) {
     final today = _ensureTodayLog();
     final entry = today.entries[type];
     if (entry != null) {
-      entry.completed = false;
+      entry
+        ..completed = false
+        ..secondsSpent = 0;
     }
     _timers[type]!
       ..isCompleted = false

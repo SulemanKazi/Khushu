@@ -55,40 +55,42 @@ class PrayerTimerScreen extends StatelessWidget {
               ),
             ],
           ),
-          body: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Column(
-              children: [
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _TimerRing(
-                        progress: progress,
-                        remaining: remaining,
-                        total: total,
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        isCompleted
-                            ? 'Completed for today'
-                            : isRunning
-                            ? 'Prayer in progress'
-                            : isPaused
-                            ? 'Paused'
-                            : 'Ready when you are',
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ],
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _TimerRing(
+                          progress: progress,
+                          remaining: remaining,
+                          total: total,
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          isCompleted
+                              ? 'Completed for today'
+                              : isRunning
+                              ? 'Prayer in progress'
+                              : isPaused
+                              ? 'Paused'
+                              : 'Ready when you are',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                _TimerControls(
-                  prayerType: prayerType,
-                  isRunning: isRunning,
-                  isPaused: isPaused,
-                  isCompleted: isCompleted,
-                ),
-              ],
+                  _TimerControls(
+                    prayerType: prayerType,
+                    isRunning: isRunning,
+                    isPaused: isPaused,
+                    isCompleted: isCompleted,
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -293,7 +295,7 @@ class _TimerControls extends StatelessWidget {
       primaryAction = () => controller.startTimer(prayerType);
     }
 
-    final showStop = isRunning || isPaused;
+    final showComplete = isRunning || isPaused;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -308,8 +310,8 @@ class _TimerControls extends StatelessWidget {
         const SizedBox(height: 12),
         OutlinedButton(
           onPressed: () {
-            if (showStop) {
-              controller.stopTimer(prayerType);
+            if (showComplete) {
+              controller.completePrayer(prayerType);
             } else if (isCompleted) {
               controller.resetCompletion(prayerType);
             } else {
@@ -319,10 +321,10 @@ class _TimerControls extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Text(
-              showStop
-                  ? 'Stop'
+              showComplete
+                  ? 'Complete Prayer'
                   : isCompleted
-                  ? 'Clear completion'
+                  ? 'Clear completion for today'
                   : 'Reset',
             ),
           ),

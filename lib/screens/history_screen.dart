@@ -24,10 +24,7 @@ class HistoryScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: [
-              SizedBox(
-                height: 220,
-                child: _CompletionChart(logs: recentLogs.reversed.toList()),
-              ),
+              _CompletionChart(logs: recentLogs.reversed.toList()),
               const SizedBox(height: 24),
               ...logs.map(
                 (log) => _HistoryTile(
@@ -83,67 +80,118 @@ class _CompletionChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Last ${logs.length} days', style: theme.textTheme.titleSmall),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: logs.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  final log = logs[index];
-                  final count = log.completedCount;
-                  final factor = count / PrayerType.values.length;
-                  final dateLabel = _formatDate(log.date);
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      SizedBox(
-                        height: 140,
-                        width: 32,
-                        child: Align(
-                          alignment: Alignment.bottomCenter,
-                          child: Container(
-                            height: 140 * factor,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              gradient: LinearGradient(
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
-                                colors: [
-                                  theme.colorScheme.primary,
-                                  theme.colorScheme.secondary,
-                                ],
+    const barHeight = 140.0;
+    const barWidth = 40.0;
+    const paddingTop = 16.0;
+    const paddingBottom = 12.0;
+    const spacingAfterTitle = 16.0;
+    const spacingAfterBar = 8.0;
+    const spacingBetweenLabels = 4.0;
+
+    final textScale = MediaQuery.textScaleFactorOf(context);
+    double measureTextHeight(String text, TextStyle? style) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+        textScaleFactor: textScale,
+      )..layout();
+      return painter.height;
+    }
+
+    final titleHeight = measureTextHeight('Last ${logs.length} days', theme.textTheme.titleSmall);
+    final countHeights = logs
+        .map((log) => measureTextHeight('${log.completedCount}/5', theme.textTheme.bodySmall))
+        .toList();
+    final dateHeights = logs
+        .map((log) => measureTextHeight(_formatDate(log.date), theme.textTheme.bodySmall))
+        .toList();
+    final labelHeight = [
+      ...countHeights,
+      ...dateHeights,
+      measureTextHeight('5/5', theme.textTheme.bodySmall),
+      measureTextHeight('Yesterday', theme.textTheme.bodySmall),
+    ].fold<double>(0, (prev, value) => value > prev ? value : prev);
+    final listViewHeight = barHeight + spacingAfterBar + labelHeight + spacingBetweenLabels + labelHeight;
+    final totalHeight = paddingTop + titleHeight + spacingAfterTitle + listViewHeight + paddingBottom + 2;
+
+    return SizedBox(
+      height: totalHeight,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, paddingTop, 16, paddingBottom),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Last ${logs.length} days', style: theme.textTheme.titleSmall),
+              const SizedBox(height: spacingAfterTitle),
+              SizedBox(
+                height: listViewHeight,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: logs.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final log = logs[index];
+                    final count = log.completedCount;
+                    final factor = count / PrayerType.values.length;
+                    final dateLabel = _formatDate(log.date);
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          height: barHeight,
+                          width: barWidth,
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                              height: barHeight * factor,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                gradient: LinearGradient(
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                  colors: [
+                                    theme.colorScheme.primary,
+                                    theme.colorScheme.secondary,
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text('$count/5', style: theme.textTheme.bodySmall),
-                      const SizedBox(height: 4),
-                      Text(
-                        dateLabel,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                        const SizedBox(height: spacingAfterBar),
+                        Text(
+                          '$count/5',
+                          style: theme.textTheme.bodySmall,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                    ],
-                  );
-                },
+                        const SizedBox(height: spacingBetweenLabels),
+                        Text(
+                          dateLabel,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
