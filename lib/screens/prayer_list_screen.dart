@@ -6,13 +6,35 @@ import '../state/prayer_controller.dart';
 import 'history_screen.dart';
 import 'prayer_timer_screen.dart';
 
+const _prayerAssetMap = <PrayerType, String>{
+  PrayerType.fajr: 'resources/Fajar.png',
+  PrayerType.dhuhr: 'resources/Dhuhr.png',
+  PrayerType.asr: 'resources/Asr.png',
+  PrayerType.maghrib: 'resources/Maghrib.png',
+  PrayerType.isha: 'resources/Isha.png',
+};
+
+const _headerAccent = Color(0xFFD75243);
+const _labelColor = Color(0xFFD75243);
+const _dividerColor = Color(0xFFE4E6EB);
+const _cardBackground = Color(0xFFFDFDFD);
+const _pageBackground = Color(0xFFF5F6F8);
+const _completedColor = Color(0xFF2F7D58);
+const _incompleteColor = Color(0xFFE0E3E7);
+const _incompleteIconColor = Color(0xFF9EA2A9);
+
 class PrayerListScreen extends StatelessWidget {
   const PrayerListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _pageBackground,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: const Color(0xFF343741),
         title: const Text('Prayer Focus'),
         actions: [
           IconButton(
@@ -30,28 +52,78 @@ class PrayerListScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            itemCount: controller.prayers.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final prayer = controller.prayers[index];
-              final duration = controller.totalDuration(prayer.type);
-              final isCompleted = controller.isCompleted(prayer.type);
-              return _PrayerTile(
-                info: prayer,
-                duration: duration,
-                isCompleted: isCompleted,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          PrayerTimerScreen(prayerType: prayer.type),
-                    ),
-                  );
-                },
-              );
-            },
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: _cardBackground,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 20,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 24),
+                      Text(
+                        'السلام عليكم',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              color: _headerAccent,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
+                      ),
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(
+                          'resources/border.png',
+                          width: double.infinity,
+                          height: 36,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      for (var i = 0; i < controller.prayers.length; i++) ...[
+                        if (i > 0)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 24),
+                            child: Divider(
+                              color: _dividerColor,
+                              height: 1,
+                              thickness: 1,
+                            ),
+                          ),
+                        _PrayerTile(
+                          info: controller.prayers[i],
+                          isCompleted: controller.isCompleted(
+                            controller.prayers[i].type,
+                          ),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => PrayerTimerScreen(
+                                  prayerType: controller.prayers[i].type,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           );
         },
       ),
@@ -62,75 +134,82 @@ class PrayerListScreen extends StatelessWidget {
 class _PrayerTile extends StatelessWidget {
   const _PrayerTile({
     required this.info,
-    required this.duration,
     required this.isCompleted,
     required this.onTap,
   });
 
   final PrayerInfo info;
-  final Duration duration;
   final bool isCompleted;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds % 60;
-    final timeLabel = seconds == 0
-        ? '${minutes.toString().padLeft(2, '0')}:00'
-        : '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-
+    final assetPath = _prayerAssetMap[info.type];
     return Material(
-      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.2),
-      borderRadius: BorderRadius.circular(16),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      theme.colorScheme.primary.withOpacity(0.8),
-                      theme.colorScheme.secondary,
-                    ],
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  info.label.substring(0, 1),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.onPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 18),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(info.label, style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Timer: $timeLabel',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
+                child: ClipOval(
+                  child: assetPath != null
+                      ? Image.asset(
+                          assetPath,
+                          fit: BoxFit.cover,
+                        )
+                      : Container(
+                          color: _incompleteColor,
+                          alignment: Alignment.center,
+                          child: Text(
+                            info.label.substring(0, 1),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: _headerAccent,
+                            ),
+                          ),
+                        ),
+                ),
               ),
-              if (isCompleted)
-                Icon(Icons.check_circle, color: theme.colorScheme.tertiary),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  info.label,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: _labelColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: isCompleted ? _completedColor : _incompleteColor,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.check,
+                  size: 18,
+                  color: isCompleted ? Colors.white : _incompleteIconColor,
+                ),
+              ),
             ],
           ),
         ),
