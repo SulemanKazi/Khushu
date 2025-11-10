@@ -131,7 +131,7 @@ class PrayerListScreen extends StatelessWidget {
   }
 }
 
-class _PrayerTile extends StatelessWidget {
+class _PrayerTile extends StatefulWidget {
   const _PrayerTile({
     required this.info,
     required this.isCompleted,
@@ -143,74 +143,125 @@ class _PrayerTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_PrayerTile> createState() => _PrayerTileState();
+}
+
+class _PrayerTileState extends State<_PrayerTile> {
+  double _scale = 1.0;
+
+  void _handleTapDown(TapDownDetails details) {
+    setState(() => _scale = 0.97);
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    setState(() => _scale = 1.0);
+  }
+
+  void _handleTapCancel() {
+    setState(() => _scale = 1.0);
+  }
+
+  void _handleTap() {
+    widget.onTap();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final assetPath = _prayerAssetMap[info.type];
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: ClipOval(
-                  child: assetPath != null
-                      ? Image.asset(
-                          assetPath,
-                          fit: BoxFit.cover,
-                        )
-                      : Container(
-                          color: _incompleteColor,
-                          alignment: Alignment.center,
-                          child: Text(
-                            info.label.substring(0, 1),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _headerAccent,
-                            ),
-                          ),
+    final assetPath = _prayerAssetMap[widget.info.type];
+    return AnimatedScale(
+      scale: _scale,
+      duration: const Duration(milliseconds: 140),
+      curve: Curves.easeOut,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _handleTap,
+          onTapDown: _handleTapDown,
+          onTapUp: _handleTapUp,
+          onTapCancel: _handleTapCancel,
+          borderRadius: BorderRadius.circular(20),
+          splashColor: _labelColor.withOpacity(0.12),
+          highlightColor: Colors.transparent,
+          child: Ink(
+            decoration: const BoxDecoration(),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 16,
+                          offset: const Offset(0, 10),
                         ),
-                ),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: assetPath != null
+                          ? Image.asset(
+                              assetPath,
+                              fit: BoxFit.cover,
+                            )
+                          : Container(
+                              color: _incompleteColor,
+                              alignment: Alignment.center,
+                              child: Text(
+                                widget.info.label.substring(0, 1),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: _headerAccent,
+                                ),
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      widget.info.label,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: _labelColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color:
+                          widget.isCompleted ? _completedColor : _incompleteColor,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        if (widget.isCompleted)
+                          BoxShadow(
+                            color: _completedColor.withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.check,
+                      size: 18,
+                      color:
+                          widget.isCompleted ? Colors.white : _incompleteIconColor,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  info.label,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: _labelColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: isCompleted ? _completedColor : _incompleteColor,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.check,
-                  size: 18,
-                  color: isCompleted ? Colors.white : _incompleteIconColor,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
