@@ -17,7 +17,6 @@ const _prayerAssetMap = <PrayerType, String>{
 const _headerAccent = Color(0xFFD75243);
 const _labelColor = Color(0xFFD75243);
 const _dividerColor = Color(0xFFE4E6EB);
-const _cardBackground = Color(0xFFFDFDFD);
 const _pageBackground = Color(0xFFF5F6F8);
 const _completedColor = Color(0xFF2F7D58);
 const _incompleteColor = Color(0xFFE0E3E7);
@@ -52,78 +51,78 @@ class PrayerListScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: _cardBackground,
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 20,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(height: 24),
-                      Text(
-                        'السلام عليكم',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: _headerAccent,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final horizontalInset = constraints.maxWidth > 480 ? 48.0 : 16.0;
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    child: Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: horizontalInset),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'السلام عليكم',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
+                                  color: _headerAccent,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                ),
+                          ),
+                          const SizedBox(height: 12),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.asset(
+                              'resources/border.png',
+                              width: double.infinity,
+                              height: 36,
+                              fit: BoxFit.cover,
                             ),
-                      ),
-                      const SizedBox(height: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(
-                          'resources/border.png',
-                          width: double.infinity,
-                          height: 36,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      for (var i = 0; i < controller.prayers.length; i++) ...[
-                        if (i > 0)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 24),
-                            child: Divider(
+                          ),
+                          const SizedBox(height: 16),
+                          ListView.separated(
+                            physics: const NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: controller.prayers.length,
+                            separatorBuilder: (_, __) => const Divider(
                               color: _dividerColor,
                               height: 1,
                               thickness: 1,
                             ),
+                            itemBuilder: (context, index) {
+                              final prayer = controller.prayers[index];
+                              return _PrayerTile(
+                                info: prayer,
+                                isCompleted:
+                                    controller.isCompleted(prayer.type),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => PrayerTimerScreen(
+                                        prayerType: prayer.type,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
                           ),
-                        _PrayerTile(
-                          info: controller.prayers[i],
-                          isCompleted: controller.isCompleted(
-                            controller.prayers[i].type,
-                          ),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => PrayerTimerScreen(
-                                  prayerType: controller.prayers[i].type,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                      const SizedBox(height: 16),
-                    ],
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           );
         },
       ),
@@ -195,14 +194,19 @@ class _PrayerTileState extends State<_PrayerTile> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 16,
-                          offset: const Offset(0, 10),
+                          color: Colors.black.withOpacity(
+                            0.2,
+                          ), // Softer black with opacity
+                          offset: const Offset(0, 2), // Shadow slightly below
+                          blurRadius: 4.0, // Soft blur
+                          spreadRadius: 0.0, // No spread
                         ),
+                        // Optional: Add another shadow for more depth
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+                          color: Colors.black.withOpacity(0.1),
+                          offset: const Offset(0, 6),
+                          blurRadius: 10.0,
+                          spreadRadius: 0.0,
                         ),
                       ],
                     ),
