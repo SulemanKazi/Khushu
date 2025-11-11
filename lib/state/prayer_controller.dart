@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/prayer_models.dart';
@@ -16,7 +17,7 @@ class PrayerTimerState {
     Duration? remaining,
     this.isCompleted = false,
   }) : remaining = remaining ?? total,
-       accruedSeconds = 0;
+       accrued = Duration.zero;
 
   Duration total;
   Duration remaining;
@@ -24,15 +25,17 @@ class PrayerTimerState {
   bool isPaused = false;
   bool isCompleted;
   Timer? ticker;
-  int accruedSeconds;
+  Duration accrued;
+  DateTime? lastTick;
 
   void cancelTicker() {
     ticker?.cancel();
     ticker = null;
+    lastTick = null;
   }
 }
 
-class PrayerController extends ChangeNotifier {
+class PrayerController extends ChangeNotifier with WidgetsBindingObserver {
   PrayerController();
 
   final List<PrayerInfo> prayers = const [
@@ -74,10 +77,15 @@ class PrayerController extends ChangeNotifier {
   late DateTime _currentDay;
   bool _isReady = false;
   SharedPreferences? _prefs;
+  bool _observerAttached = false;
 
   bool get isReady => _isReady;
 
   Future<void> load() async {
+    if (!_observerAttached) {
+      WidgetsBinding.instance.addObserver(this);
+      _observerAttached = true;
+    }
     _currentDay = _truncateToDate(DateTime.now());
     _prefs = await SharedPreferences.getInstance();
 
@@ -174,8 +182,10 @@ class PrayerController extends ChangeNotifier {
       _resetTimerInternal(type, keepCompletion: false);
     }
 
+    state.accrued = Duration.zero;
     state.isRunning = true;
     state.isPaused = false;
+    state.lastTick = DateTime.now();
     state.ticker?.cancel();
     state.ticker = Timer.periodic(
       const Duration(seconds: 1),
@@ -190,6 +200,7 @@ class PrayerController extends ChangeNotifier {
       return;
     }
 
+    _advanceTimer(type);
     state.isRunning = false;
     state.isPaused = true;
     state.cancelTicker();
@@ -204,6 +215,7 @@ class PrayerController extends ChangeNotifier {
 
     state.isRunning = true;
     state.isPaused = false;
+    state.lastTick = DateTime.now();
     state.ticker?.cancel();
     state.ticker = Timer.periodic(
       const Duration(seconds: 1),
@@ -214,11 +226,12 @@ class PrayerController extends ChangeNotifier {
 
   void stopTimer(PrayerType type) {
     final state = _timers[type]!;
-    final secondsWorked = state.accruedSeconds;
+    _advanceTimer(type);
+    final secondsWorked = state.accrued.inSeconds;
     state.cancelTicker();
     state.isRunning = false;
     state.isPaused = false;
-    state.accruedSeconds = 0;
+    state.accrued = Duration.zero;
     state.remaining = state.total;
 
     if (secondsWorked > 0) {
@@ -231,17 +244,18 @@ class PrayerController extends ChangeNotifier {
   void completePrayer(PrayerType type) {
     final state = _timers[type]!;
 
+    _advanceTimer(type);
     if (state.isCompleted) {
       return;
     }
 
-    final secondsWorked = state.accruedSeconds;
+    final secondsWorked = state.accrued.inSeconds;
     state.cancelTicker();
     state.isRunning = false;
     state.isPaused = false;
     state.isCompleted = true;
     state.remaining = Duration.zero;
-    state.accruedSeconds = 0;
+    state.accrued = Duration.zero;
 
     _recordSession(type, secondsWorked, completed: true);
     notifyListeners();
@@ -258,7 +272,8 @@ class PrayerController extends ChangeNotifier {
     _timers[type]!
       ..isCompleted = false
       ..remaining = _timers[type]!.total
-      ..accruedSeconds = 0;
+      ..accrued = Duration.zero
+      ..lastTick = null;
     _saveHistory();
     notifyListeners();
   }
@@ -268,17 +283,20 @@ class PrayerController extends ChangeNotifier {
     final wasRunning = state.isRunning || state.isPaused;
 
     if (wasRunning) {
+      _advanceTimer(type);
       state.cancelTicker();
-      if (state.accruedSeconds > 0) {
-        _recordSession(type, state.accruedSeconds, completed: false);
+      final accruedSeconds = state.accrued.inSeconds;
+      if (accruedSeconds > 0) {
+        _recordSession(type, accruedSeconds, completed: false);
       }
       state.isRunning = false;
       state.isPaused = false;
-      state.accruedSeconds = 0;
+      state.accrued = Duration.zero;
     }
 
     state.total = duration;
     state.remaining = state.isCompleted ? Duration.zero : duration;
+    state.lastTick = null;
 
     if (duration != _defaultDurationFor(type)) {
       _customDurations[type] = duration;
@@ -304,28 +322,68 @@ class PrayerController extends ChangeNotifier {
     for (final state in _timers.values) {
       state.cancelTicker();
     }
+    if (_observerAttached) {
+      WidgetsBinding.instance.removeObserver(this);
+      _observerAttached = false;
+    }
     super.dispose();
   }
 
   void _handleTick(PrayerType type) {
-    final state = _timers[type]!;
-    final secondsLeft = state.remaining.inSeconds - 1;
-    state.accruedSeconds += 1;
+    final updated = _advanceTimer(type);
+    if (updated) {
+      notifyListeners();
+    }
+  }
 
-    if (secondsLeft <= 0) {
+  bool _advanceTimer(PrayerType type, {DateTime? referenceTime}) {
+    final state = _timers[type]!;
+    if (!state.isRunning || state.lastTick == null) {
+      return false;
+    }
+
+    final now = referenceTime ?? DateTime.now();
+    final elapsed = now.difference(state.lastTick!);
+    if (elapsed <= Duration.zero) {
+      return false;
+    }
+
+    state.lastTick = now;
+
+    if (elapsed >= state.remaining) {
+      final consumed = state.remaining;
+      state.accrued += consumed;
       state.remaining = Duration.zero;
       state.cancelTicker();
       state.isRunning = false;
       state.isPaused = false;
       state.isCompleted = true;
       final sessionSeconds = state.total.inSeconds;
-      state.accruedSeconds = 0;
+      state.accrued = Duration.zero;
       _recordSession(type, sessionSeconds, completed: true);
-    } else {
-      state.remaining = Duration(seconds: secondsLeft);
+      return true;
     }
 
-    notifyListeners();
+    state.remaining -= elapsed;
+    state.accrued += elapsed;
+    return true;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) {
+      return;
+    }
+
+    final now = DateTime.now();
+    var hasUpdated = false;
+    for (final type in PrayerType.values) {
+      hasUpdated = _advanceTimer(type, referenceTime: now) || hasUpdated;
+    }
+
+    if (hasUpdated) {
+      notifyListeners();
+    }
   }
 
   void _recordSession(PrayerType type, int seconds, {required bool completed}) {
@@ -344,10 +402,12 @@ class PrayerController extends ChangeNotifier {
     state.cancelTicker();
     state.isRunning = false;
     state.isPaused = false;
+    state.accrued = Duration.zero;
     if (!keepCompletion) {
       state.isCompleted = false;
       state.remaining = state.total;
     }
+    state.lastTick = null;
   }
 
   DailyPrayerLog _ensureTodayLog() {
@@ -368,8 +428,9 @@ class PrayerController extends ChangeNotifier {
       state.isRunning = false;
       state.isPaused = false;
       state.isCompleted = false;
-      state.accruedSeconds = 0;
+      state.accrued = Duration.zero;
       state.remaining = state.total;
+      state.lastTick = null;
     }
 
     final key = _dateKey(_currentDay);
