@@ -5,6 +5,31 @@ import '../models/prayer_models.dart';
 import '../state/prayer_controller.dart';
 import '../widgets/animated_progress_ring.dart';
 
+const _prayerAssetMap = <PrayerType, String>{
+  PrayerType.fajr: 'resources/Fajar.png',
+  PrayerType.dhuhr: 'resources/Dhuhr.png',
+  PrayerType.asr: 'resources/Asr.png',
+  PrayerType.maghrib: 'resources/Maghrib.png',
+  PrayerType.isha: 'resources/Isha.png',
+};
+
+const _titleColor = Color(0xFFD75243);
+
+const _monthAbbreviations = <String>[
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
 class PrayerTimerScreen extends StatelessWidget {
   const PrayerTimerScreen({super.key, required this.prayerType});
 
@@ -22,6 +47,13 @@ class PrayerTimerScreen extends StatelessWidget {
         final isRunning = controller.isRunning(prayerType);
         final isPaused = controller.isPaused(prayerType);
         final isCompleted = controller.isCompleted(prayerType);
+        final assetPath = _prayerAssetMap[prayerType];
+        final now = DateTime.now();
+        final formattedDate =
+            '${_monthAbbreviations[now.month - 1]} ${now.day.toString().padLeft(2, '0')} ${now.year}';
+        final textStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: _titleColor,
+            );
         final totalSeconds = total.inSeconds;
         final remainingSeconds = remaining.inSeconds.clamp(0, totalSeconds);
         final progress = totalSeconds == 0
@@ -30,7 +62,6 @@ class PrayerTimerScreen extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(info.label),
             actions: [
               IconButton(
                 icon: const Icon(Icons.timer_outlined),
@@ -58,6 +89,64 @@ class PrayerTimerScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
               child: Column(
                 children: [
+                  // Present the selected prayer metadata above the timer ring.
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              offset: const Offset(0, 2),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: assetPath != null
+                              ? Image.asset(
+                                  assetPath,
+                                  fit: BoxFit.cover,
+                                )
+                              : Container(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withOpacity(0.1),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    info.label.substring(0, 1),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          info.label,
+                          style: textStyle,
+                        ),
+                      ),
+                      Text(
+                        formattedDate,
+                        style: textStyle,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
                   Expanded(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
