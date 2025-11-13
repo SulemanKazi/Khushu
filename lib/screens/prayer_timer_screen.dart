@@ -1,5 +1,3 @@
-import 'dart:ui' show FontFeature;
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -68,6 +66,8 @@ class PrayerTimerScreen extends StatelessWidget {
                           progress: progress,
                           remaining: remaining,
                           total: total,
+                          isActive: isRunning || isPaused,
+                          isCompleted: isCompleted,
                         ),
                         const SizedBox(height: 24),
                         Text(
@@ -203,17 +203,19 @@ class _TimerRing extends StatelessWidget {
     required this.progress,
     required this.remaining,
     required this.total,
+    required this.isActive,
+    required this.isCompleted,
   });
 
   final double progress;
   final Duration remaining;
   final Duration total;
+  final bool isActive;
+  final bool isCompleted;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final foreground = theme.colorScheme.secondary;
-    final background = theme.colorScheme.surfaceContainerHighest.withOpacity(0.25);
 
     String format(Duration duration) {
       final minutes = duration.inMinutes.remainder(60);
@@ -234,8 +236,8 @@ class _TimerRing extends StatelessWidget {
             AnimatedProgressRing(
               progress: progress,
               size: 220,
-              color: foreground,
-              backgroundColor: background,
+              isActive: isActive,
+              isCompleted: isCompleted,
             ),
             Column(
               mainAxisSize: MainAxisSize.min,
