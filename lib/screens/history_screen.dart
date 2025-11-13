@@ -27,17 +27,15 @@ class HistoryScreen extends StatelessWidget {
             children: [
               _CompletionChart(logs: logs),
               const SizedBox(height: 24),
-              ...logs.map(
-                (log) => _HistoryTile(
-                  log: log,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => DailyDetailScreen(log: log),
-                      ),
-                    );
-                  },
-                ),
+              _HistoryList(
+                logs: logs,
+                onSelect: (log) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => DailyDetailScreen(log: log),
+                    ),
+                  );
+                },
               ),
             ],
           );
@@ -435,6 +433,57 @@ String _formatDayLabel(DateTime date) {
   return '${date.day} $month';
 }
 
+class _HistoryList extends StatelessWidget {
+  const _HistoryList({required this.logs, required this.onSelect});
+
+  final List<DailyPrayerLog> logs;
+  final void Function(DailyPrayerLog log) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final borderColor = theme.colorScheme.outlineVariant.withOpacity(0.2);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final widthFactor = screenWidth < 360 ? 1.0 : 0.8;
+
+    return Align(
+      alignment: Alignment.topCenter,
+      child: FractionallySizedBox(
+        widthFactor: widthFactor,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              border: Border.all(color: borderColor),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 0; i < logs.length; i++) ...[
+                    if (i > 0)
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: borderColor,
+                      ),
+                    _HistoryTile(
+                      log: logs[i],
+                      onTap: () => onSelect(logs[i]),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _HistoryTile extends StatelessWidget {
   const _HistoryTile({required this.log, required this.onTap});
 
@@ -449,27 +498,76 @@ class _HistoryTile extends StatelessWidget {
       0,
       (sum, entry) => sum + entry.secondsSpent,
     );
-    final minutes = (totalSeconds / 60).floor();
+    final minutes = (totalSeconds / 60).round();
 
-    return Card(
-      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.25),
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: ListTile(
+    final prayersLabel = _formatPrayerCount(completed);
+    final minutesLabel = _formatMinuteLabel(minutes);
+    final dateLabel = _formatShortDate(log.date);
+    final dividerColor = theme.colorScheme.outlineVariant.withOpacity(0.3);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         onTap: onTap,
-        title: Text(_formatFullDate(log.date)),
-        subtitle: Text('$completed prayers · ~$minutes minutes'),
-        trailing: Icon(
-          Icons.chevron_right,
-          color: theme.colorScheme.onSurfaceVariant,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 56,
+                child: Text(
+                  dateLabel,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 32,
+                color: dividerColor,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  prayersLabel,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  minutesLabel,
+                  textAlign: TextAlign.right,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  String _formatFullDate(DateTime date) {
+  String _formatShortDate(DateTime date) {
     final month = _monthNames[date.month - 1];
-    return '${date.day} $month ${date.year}';
+    return '${date.day} $month';
+  }
+
+  String _formatPrayerCount(int count) {
+    final suffix = count == 1 ? 'prayer' : 'prayers';
+    return '$count $suffix';
+  }
+
+  String _formatMinuteLabel(int minutes) {
+    final suffix = minutes == 1 ? 'minute' : 'minutes';
+    return '$minutes $suffix';
   }
 }
 
