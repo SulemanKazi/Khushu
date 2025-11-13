@@ -25,7 +25,7 @@ class PrayerTimesApp extends StatelessWidget {
     return ChangeNotifierProvider<PrayerController>.value(
       value: controller,
       child: MaterialApp(
-        title: 'Prayer Focus',
+        title: 'Khushu',
         debugShowCheckedModeBanner: false,
         theme: _buildTheme(),
         home: const PrayerListScreen(),
@@ -54,7 +54,6 @@ class PrayerTimesApp extends StatelessWidget {
       tertiary: tertiary,
       surface: cardColor,
       surfaceTint: Colors.transparent,
-      background: background,
       onSurface: onSurface,
       onSurfaceVariant: onSurfaceVariant,
       outlineVariant: const Color(0xFFE1D8CF),
@@ -116,12 +115,12 @@ class PrayerTimesApp extends StatelessWidget {
         thumbColor: tertiary,
       ),
       checkboxTheme: CheckboxThemeData(
-        fillColor: MaterialStateProperty.resolveWith(
-          (states) => states.contains(MaterialState.selected)
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
               ? const Color(0xFF51B266)
               : scheme.outlineVariant,
         ),
-        checkColor: MaterialStateProperty.all<Color>(Colors.white),
+        checkColor: WidgetStateProperty.all<Color>(Colors.white),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );

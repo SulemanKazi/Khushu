@@ -34,7 +34,7 @@ class PrayerListScreen extends StatelessWidget {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         foregroundColor: const Color(0xFF343741),
-        title: const Text('Prayer Focus'),
+        title: const Text('خشوع'),
         actions: [
           IconButton(
             icon: const Icon(Icons.bar_chart),
