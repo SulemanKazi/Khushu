@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -315,6 +316,40 @@ class PrayerController extends ChangeNotifier with WidgetsBindingObserver {
     final logs = _history.values.toList()
       ..sort((a, b) => b.dateKey.compareTo(a.dateKey));
     return logs;
+  }
+
+  void seedDebugHistory({int weeks = 4, bool clearExisting = false}) {
+    final totalDays = max(1, weeks) * 7;
+    if (clearExisting) {
+      _history.clear();
+    }
+
+    final random = Random(7);
+    final today = _truncateToDate(DateTime.now());
+    for (var i = 0; i < totalDays; i++) {
+      final date = today.subtract(Duration(days: i));
+      final key = _dateKey(date);
+      final log = _history.putIfAbsent(key, () => DailyPrayerLog(dateKey: key));
+      final completedTarget = random.nextInt(6);
+      var processed = 0;
+      for (final type in PrayerType.values) {
+        final entry = log.entries[type] ?? PrayerEntry();
+        final shouldComplete = processed < completedTarget;
+        entry.completed = shouldComplete;
+        if (shouldComplete) {
+          final minutes = 5 + random.nextInt(13);
+          entry.secondsSpent = minutes * 60;
+          processed += 1;
+        } else {
+          entry.secondsSpent = random.nextInt(4) * 60;
+        }
+        log.entries[type] = entry;
+      }
+      _history[key] = log;
+    }
+
+    _applyCompletionFlags();
+    _saveHistory();
   }
 
   @override

@@ -8,6 +8,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final controller = PrayerController();
   await controller.load();
+  assert(() {
+    controller.seedDebugHistory(weeks: 8, clearExisting: true);
+    return true;
+  }());
   runApp(PrayerTimesApp(controller: controller));
 }
 
