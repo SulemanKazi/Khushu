@@ -199,14 +199,11 @@ class _PrayerTileState extends State<_PrayerTile> {
                           ), // Softer black with opacity
                           offset: const Offset(0, 2), // Shadow slightly below
                           blurRadius: 4.0, // Soft blur
-                          spreadRadius: 0.0, // No spread
                         ),
-                        // Optional: Add another shadow for more depth
                         BoxShadow(
                           color: Colors.black.withOpacity(0.1),
                           offset: const Offset(0, 6),
                           blurRadius: 10.0,
-                          spreadRadius: 0.0,
                         ),
                       ],
                     ),
