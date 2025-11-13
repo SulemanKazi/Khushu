@@ -4,6 +4,14 @@ import 'package:provider/provider.dart';
 import '../models/prayer_models.dart';
 import '../state/prayer_controller.dart';
 
+const _prayerAssetMap = <PrayerType, String>{
+  PrayerType.fajr: 'resources/Fajar.png',
+  PrayerType.dhuhr: 'resources/Dhuhr.png',
+  PrayerType.asr: 'resources/Asr.png',
+  PrayerType.maghrib: 'resources/Maghrib.png',
+  PrayerType.isha: 'resources/Isha.png',
+};
+
 class DailyDetailScreen extends StatelessWidget {
   const DailyDetailScreen({super.key, required this.log});
 
@@ -25,6 +33,7 @@ class DailyDetailScreen extends StatelessWidget {
           final entry = log.entries[prayerInfo.type] ?? PrayerEntry();
           final duration = Duration(seconds: entry.secondsSpent);
           final completed = entry.completed;
+          final assetPath = _prayerAssetMap[prayerInfo.type];
 
           return Container(
             decoration: BoxDecoration(
@@ -32,6 +41,24 @@ class DailyDetailScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
             ),
             child: ListTile(
+              leading: assetPath != null
+                  ? CircleAvatar(
+                      radius: 24,
+                      backgroundImage: AssetImage(assetPath),
+                      backgroundColor: Colors.transparent,
+                    )
+                  : CircleAvatar(
+                      radius: 24,
+                      backgroundColor:
+                          theme.colorScheme.surfaceContainerHighest,
+                      child: Text(
+                        prayerInfo.label.substring(0, 1),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
               title: Text(prayerInfo.label),
               subtitle: Text(_formatDuration(duration)),
               trailing: completed
