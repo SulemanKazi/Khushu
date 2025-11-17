@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -42,7 +41,7 @@ class PrayerController extends ChangeNotifier with WidgetsBindingObserver {
   final List<PrayerInfo> prayers = const [
     PrayerInfo(
       type: PrayerType.fajr,
-      defaultDuration: Duration(minutes: 8),
+      defaultDuration: Duration(minutes: 6),
       label: 'Fajr',
     ),
     PrayerInfo(
@@ -52,17 +51,17 @@ class PrayerController extends ChangeNotifier with WidgetsBindingObserver {
     ),
     PrayerInfo(
       type: PrayerType.asr,
-      defaultDuration: Duration(minutes: 8),
+      defaultDuration: Duration(minutes: 6),
       label: 'Asr',
     ),
     PrayerInfo(
       type: PrayerType.maghrib,
-      defaultDuration: Duration(minutes: 10),
+      defaultDuration: Duration(minutes: 8),
       label: 'Maghrib',
     ),
     PrayerInfo(
       type: PrayerType.isha,
-      defaultDuration: Duration(minutes: 16),
+      defaultDuration: Duration(minutes: 13),
       label: 'Isha',
     ),
   ];
